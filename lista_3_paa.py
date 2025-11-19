@@ -72,11 +72,17 @@ def problema_1(n: int, A: List[int]) -> int:
     Saída:
     Retorne um único inteiro $Q$, a quantidade máxima total de sorvete
     que Sisi pode obter.
+
+    IDEIA: Como a quantidade de sorvete que posso pegar é estritamente menor que
+    a quantidade que posso pegar do próximo sabor, então podemos fazer uma 
+    escolha gulosa percorrendo a lista dos estoques do final para o início 
     """
 
+    # Casos de bordo
     if n < 0 or A == []:
         return None
 
+    # Função auxiliar para calcular o mínimo entre dois números
     def min(a, b):
         if a > b:
             return b
@@ -84,14 +90,15 @@ def problema_1(n: int, A: List[int]) -> int:
             return a
 
     n = len(A)
-    quantidades = [0] * n
-    anterior = 1e9
+    quantidades = [0] * n  # Array de 0 para as quantidades de cada sorvete
+    anterior = 1e9  # Definindo um comparador com limite da questão
 
+    # Percorrendo a lista ao contrário
     for i in range(n-1, -1, -1):
-        valor_comparacao = min(A[i], anterior - 1)
-        if valor_comparacao > 0:
+        valor_comparacao = min(A[i], anterior - 1)  # Comparando o estoque do sabor atual com a quantidade escolhida anteriormente
+        if valor_comparacao > 0:  # Sigo o comando da questão
             quantidades[i] = valor_comparacao
-        anterior = quantidades[i]        
+        anterior = quantidades[i]  # Atualizo a minha quantidade anterior
 
     return quantidades
 
@@ -112,6 +119,12 @@ def problema_2(n: int, k: int, C1: int, C2: int, A: List[int]) -> int:
 
     Saída:
     - Retorne um único inteiro: o custo mínimo total para reparar toda a estrada.
+
+    IDEIA: Vamos usar dividir e conquistar, mas ao invés de fazer só no intervalo 
+    da estrada, vamos também fazer na lista de buracos.
+    Dividimos normalmente o intervalo da estrada e depois dividimos o intervalo dos
+    buracos com o seguinte raciocínio: qual o índice mais a direita do intervalo que 
+    estou vendo que posso olhar para dividir, pois isso diminui o custo total
     """
 
 
@@ -135,7 +148,7 @@ def problema_2(n: int, k: int, C1: int, C2: int, A: List[int]) -> int:
 
         l = b - a + 1  # Tamanho do intervalo
         N_b = j - i  # Número de buracos do intervalo
-        custo_concerto_intervalo_todo = C2 * l * N_b
+        custo_concerto_intervalo_todo = C2 * l * N_b  # Custo do intervalo com buracos
         
         # Caso em que não há buracos
         if N_b == 0:
@@ -161,7 +174,7 @@ def problema_2(n: int, k: int, C1: int, C2: int, A: List[int]) -> int:
     L = 2**n  # Comprimento total
 
     # Passamos len(A) por conta do comportamento exclusivo de adicionar_mais_a_direita
-    return(solve_intervalo(1, L, 0, len(A)))  
+    return solve_intervalo(1, L, 0, len(A))
 
 
 
@@ -179,10 +192,55 @@ def problema_3(n: int, A: List[int]) -> int:
 
     Saída:
     - A quantidade total de subsequências radicais, módulo $999999937$.
+
+    IDEIA: Vamos utilizar programação dinâmica e um dos princípios da estratégia
+    gulosa. Primeiro, calculamos todos os divisores de um número em O(sqrt(n)) de
+    forma ordenada (pela simetria do problema conseguimo fazer isso em O(sqrt(n)))
+    Como a quantidade de divisores é da ordem de sqrt(n).
+    Depois, criamos um array para armazenar quantas subsequências de tamanho i eu 
+    tenho (incluíndo a sequência vazia, que é o caso base) e atualizamos o array de 
+    subsequências
     """
     MOD = 999999937
-    pass
 
+    # Função auxiliar para calcular todos os divisores de um número em 
+    # O(sqrt(número)) <= O(sqrt(n))
+    def divisores_ordenados(num: int):
+        divs_low = []
+        divs_high = []
+        upper_bound = min(num, n)
+        r = int(pow(num, 1/2))
+        for i in range(1, r + 1):
+            if num % i == 0:
+                if i <= upper_bound:
+                    divs_low.append(i)
+                if i != num // i and num//i <= upper_bound:   # divisor diferente
+                    divs_high.append(num // i)
+        return divs_high + divs_low
+    
+    # Definindo o array para guardar quantas subsequências de tamanho i eu tenho
+    tamanho_subseqs = [0] * (n + 1)
+    tamanho_subseqs[0] = 1 # tamanho_subseqs[0] = 1, representando a subsequência vazia (o ponto de partida)
+
+    # Itera sobre cada elemento A[j] da sequência de entrada
+    for a in A:
+        # Complexidade de get_divisors(a) é O(sqrt(a)) <= O(sqrt(n))
+        divisors = divisores_ordenados(a)
+        
+        # Para cada divisor k de 'a', o elemento 'a' pode ser o k-ésimo termo.
+        # Ele estende todas as subsequências radicais de comprimento k-1.
+        # Iteramos do maior k para o menor.
+        for k in divisors:
+            # Novo tamanho_subseqs[k] = (tamanho_subseqs[k] + tamanho_subseqs[k-1])
+            # O tamanho_subseqs[k-1] é o número de subsequências radicais de comprimento k-1
+            # que A[j] pode estender para formar novas subsequências de comprimento k.
+            tamanho_subseqs[k] = tamanho_subseqs[k] + tamanho_subseqs[k-1]
+
+    # O resultado é a soma de tamanho_subseqs, sem contar o caso da lista vazia
+    total_radical_subsequences = (sum(tamanho_subseqs) - 1) % MOD
+
+    return total_radical_subsequences
+        
 
 # ==============================================================================
 # Problema 4 - Cavalo
@@ -199,24 +257,27 @@ def problema_4(n: int) -> List[List[int]]:
     Saída:
     - Retorna uma matriz $A$, onde $A[i][j]$ é o número mínimo de
       movimentos para um cavalo ir da posição (i, j) para a posição (0, 0).
+
+    IDEIA: Realizar um BFS na matriz, ou seja, supomos que a matriz é um grafo 
+    com pesos iguais a 1 e encontramos o menor caminho do nó (casa do tabuleiro)
+    até o "primeiro nó" ((0,0))
     """
 
     def bfs_matrix(start: int, matrix):
-        moves = [
-            (-2, -1), (-2, 1), (-1, -2), (-1, 2),
-            (1, -2), (1, 2), (2, -1), (2, 1)
-        ]
         queue = deque([start]) # fila para BFS
         while queue:
             i, j = queue.popleft() # nó atual
-            for di, dj in moves:
-                ni, nj = i + di, j + dj
+            moves = [
+                (i-2, j-1), (i-2, j+1), (i-1, j-2), (i-1, j+2),
+                (i+1, j-2), (i+1, j+2), (i+2, j-1), (i+2, j+1)
+            ]
+            for novo_i, novo_j in moves:
                 # Verifica limites
-                if 0 <= ni < n and 0 <= nj < n:
+                if 0 <= novo_i < n and 0 <= novo_j < n:
                     # Se ainda não foi visitado
-                    if matrix[ni][nj] == -1:
-                        matrix[ni][nj] = matrix[i][j] + 1
-                        queue.append((ni, nj))
+                    if matrix[novo_i][novo_j] == -1:
+                        matrix[novo_i][novo_j] = matrix[i][j] + 1
+                        queue.append((novo_i, novo_j))
     
     # Inicializa a matriz com -1 (não visitado)
     matrix = [[-1 for _ in range(n)] for _ in range(n)]
