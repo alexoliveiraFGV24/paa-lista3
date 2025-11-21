@@ -224,22 +224,22 @@ def problema_3(n: int, A: List[int]) -> int:
 
     # Itera sobre cada elemento A[j] da sequência de entrada
     for a in A:
-        # Complexidade de get_divisors(a) é O(sqrt(a)) <= O(sqrt(n))
-        divisors = divisores_ordenados(a)
+        # Pego os divisores do número a
+        divisores = divisores_ordenados(a)
         
         # Para cada divisor k de 'a', o elemento 'a' pode ser o k-ésimo termo.
-        # Ele estende todas as subsequências radicais de comprimento k-1.
         # Iteramos do maior k para o menor.
-        for k in divisors:
-            # Novo tamanho_subseqs[k] = (tamanho_subseqs[k] + tamanho_subseqs[k-1])
+        # Observe que len(divisores) <= sqrt(n) para {1} U [3, infty)
+        for k in divisores:
+            # Novo tamanho_subseqs[k] = tamanho_subseqs[k] + tamanho_subseqs[k-1]
             # O tamanho_subseqs[k-1] é o número de subsequências radicais de comprimento k-1
-            # que A[j] pode estender para formar novas subsequências de comprimento k.
+            # que a pode estender para formar novas subsequências de comprimento k.
             tamanho_subseqs[k] = tamanho_subseqs[k] + tamanho_subseqs[k-1]
 
     # O resultado é a soma de tamanho_subseqs, sem contar o caso da lista vazia
-    total_radical_subsequences = (sum(tamanho_subseqs) - 1) % MOD
+    total_radical_subsequences = sum(tamanho_subseqs) - 1
 
-    return total_radical_subsequences
+    return total_radical_subsequences % MOD
         
 
 # ==============================================================================
@@ -263,30 +263,27 @@ def problema_4(n: int) -> List[List[int]]:
     até o "primeiro nó" ((0,0))
     """
 
-    def bfs_matrix(start: int, matrix):
-        queue = deque([start]) # fila para BFS
-        while queue:
-            i, j = queue.popleft() # nó atual
-            moves = [
-                (i-2, j-1), (i-2, j+1), (i-1, j-2), (i-1, j+2),
-                (i+1, j-2), (i+1, j+2), (i+2, j-1), (i+2, j+1)
-            ]
-            for novo_i, novo_j in moves:
-                # Verifica limites
-                if 0 <= novo_i < n and 0 <= novo_j < n:
-                    # Se ainda não foi visitado
-                    if matrix[novo_i][novo_j] == -1:
-                        matrix[novo_i][novo_j] = matrix[i][j] + 1
-                        queue.append((novo_i, novo_j))
+    # Inicializa a matriz com -1 (não visitado) (O(n²)) e inicializa a fila para o BFS
+    matriz = [[-1 for _ in range(n)] for _ in range(n)]
+    matriz[0][0] = 0
+    inicio = (0,0)
+    queue = deque([inicio]) # fila para BFS
+
+    # Realiza o BFS
+    while queue:
+        i, j = queue.popleft() # nó atual (popletft é O(1), enquanto pop(0) é O(n))
+        movimentos_possiveis = [
+            (i-2, j-1), (i-2, j+1), (i-1, j-2), (i-1, j+2),
+            (i+1, j-2), (i+1, j+2), (i+2, j-1), (i+2, j+1)
+        ]
+        for novo_i, novo_j in movimentos_possiveis:
+            # Verifica limites
+            if 0 <= novo_i < n and 0 <= novo_j < n:  # Vê se a nova posição passou do tabuleiro
+                if matriz[novo_i][novo_j] == -1:  # Vê se ainda não foi visitado
+                    matriz[novo_i][novo_j] = matriz[i][j] + 1
+                    queue.append((novo_i, novo_j))
     
-    # Inicializa a matriz com -1 (não visitado)
-    matrix = [[-1 for _ in range(n)] for _ in range(n)]
-    matrix[0][0] = 0
-
-    # Faz o bfs na matriz
-    bfs_matrix((0, 0), matrix)
-
-    return matrix
+    return matriz
 
 
 # ==============================================================================
@@ -303,8 +300,66 @@ def problema_5(n: int, m: int, grid: List[List[str]]) -> int:
 
     Saída:
     - Retorne o menor tempo para escapar. Se não for possível, retorne -1.
+
+    IDEIA: Fazer dois BFS. O primeiro seria para saber o tempo mínimo que água
+    estaria numa célula (sem ser parede) do grid. O outro seria para saber o tempo
+    mínimo em que eu estaria numa célula (sem ser parede ou água) do grid. 
+    Faria a execução do segundo BFS até eu estar em uma das bordas da caverna.
+    Caso não consiga, retornaria -1
     """
-    pass
+
+    INF = 10**7  # Infinito do problema
+    VIZINHOS = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # Vetor de movimentos: Cima, Baixo, Esquerda, Direita
+
+    # Inicializa a matriz com as posições das águas no tempo inicial
+    # e coloca as posições das águas na fila
+    matriz_tempo_agua = [[INF] * m for _ in range(n)]
+    fila_agua = deque()    
+    for r in range(n):
+        for c in range(m):
+            if grid[r][c] == 'A':
+                matriz_tempo_agua[r][c] = 0
+                fila_agua.append((r, c))
+
+    # Inicializa a matriz com a minha posição inicial e coloca a minha
+    # posição inicial na fila
+    matriz_tempo_escape = [[INF] * m for _ in range(n)]
+    fila_escape = deque()    
+    for r in range(n):
+        for c in range(m):
+            if grid[r][c] == 'V':
+                matriz_tempo_escape[r][c] = 0
+                fila_escape.append((r, c))
+
+    # Realizando o BFS na matriz de tempo das águas para saber o tempo mínimo
+    # em que cada célula (diferente da parede) estará com água
+    while fila_agua:
+        i, j = fila_agua.popleft()
+        tempo_agua_atual = matriz_tempo_agua[i][j]
+        for di, dj in VIZINHOS:
+            novo_i, novo_j = i + di, j + dj
+            if 0 <= novo_i < n and 0 <= novo_j < m:  # Não passou da caverna
+                if grid[novo_i][novo_j] != "#" and matriz_tempo_agua[novo_i][novo_j] == INF:  # Condições para atualizar o tempo
+                    matriz_tempo_agua[novo_i][novo_j] = tempo_agua_atual + 1  # Atualizo o tempo mínimo
+                    fila_agua.append((novo_i, novo_j))
+
+    # Realizando  BFS na matriz de tempo de escape para saber o tempo mínimo
+    # em que eu passo em cada célula (sem ser parede ou água)
+    while fila_escape:
+        i, j = fila_escape.popleft()
+        tempo_escape_atual = matriz_tempo_escape[i][j]
+        if i == 0 or i == n-1 or j == 0 or j == m-1:  # Se estou na borda (escapei)
+            return tempo_escape_atual
+        for di, dj in VIZINHOS:
+            novo_i, novo_j = i + di, j + dj
+            tempo_escape_novo = tempo_escape_atual + 1
+            if 0 <= novo_i < n and 0 <= novo_j < m: # Não passou da caverna
+                if grid[novo_i][novo_j] != "#" and matriz_tempo_escape[novo_i][novo_j] == INF and tempo_escape_novo < matriz_tempo_agua[novo_i][novo_j]: # Condições para atualizar o tempo
+                    matriz_tempo_escape[novo_i][novo_j] = tempo_escape_novo  # Atualizo o tempo mínimo
+                    fila_escape.append((novo_i, novo_j))
+
+    # Não consegui escapar
+    return -1 
 
 
 # ==============================================================================
