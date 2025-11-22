@@ -379,8 +379,62 @@ def problema_6(n: int, m: int, rotas: List[Tuple[int, int, int]]) -> int:
 
     Saída:
     - Retorne o menor custo total possível para a viagem.
+
+    IDEIA: Usar programação dinâmica e o algoritmo de Dijskstra
+    O cache seria uma matriz nx2, em que o elemento ij é o menor caminho
+    para chegar no planeta i e j indicaria se eu usei o cupom alguma
+    vez no caminho (0 caso não e 1 caso sim)
+    Além disso, para otimizar a busca pela CPT do grafo, usaríamos
+    a versão rápida do algoritmo de Dijskstra, cobrindo três casos:
+        1) Não usei o cupom e continuo sem usar ele
+        2) Não usei o cupom e agora uso ele (não posso usar mais)
+        3) Já usei o cupom e vou continuar a rota sem ele
+    No final, retorno o mínimo entre custos[n-1][0] e custos[n-1][1], ou
+    seja, se é mais vantajoso eu usar não usar ou usar o cupom. 
     """
-    pass
+
+    INF = 10**9
+    
+    # Iniciando o grafo com as rotas do índice 0
+    # (apenas tiro 1 dos índices reais dos vértices)
+    # (fiz isso para evitar dict.get() que é O(1) apenas
+    # no caso médio)
+    grafo = [[] for _ in range(n)]
+    for origem, destino, custo in rotas:
+        grafo[origem-1].append((destino-1, custo))
+
+    # Iniciando a matriz de cache para usar programação
+    # dinâmica (coluna 0 diz que o cupom não foi usado na rota
+    # e coluna 1 diz que já foi usado na rota, além disso,
+    # custos[i][j] = menor custo para chegar ao planeta i)
+    custos = [[INF] * 2 for _ in range(n)]    
+    custos[0][0] = 0
+
+    # Execução do algoritmo de Dijskstra
+    heap = [(0, 0, 0)] 
+    while heap:
+        custo_atual, u, uso_cupom = heapq.heappop(heap) # Informações do planeta u 
+        if custo_atual > custos[u][uso_cupom]:  # Se o custo for maior, não temos o que fazer
+            continue            
+        for v, custo_rota_v in grafo[u]:  # Para todos os destinos possíveis de u
+            if uso_cupom == 0:  # Caso ainda não tenha usado o cupom
+                custo_novo = custo_atual + custo_rota_v
+                if custo_novo < custos[v][0]:  # Vejo se posso atualizar para um valor menor
+                    custos[v][0] = custo_novo
+                    heapq.heappush(heap, (custo_novo, v, 0))
+                custo_cupom = int(custo_rota_v / 2)  # Vejo o valor do cupom para aquela rota
+                custo_novo = custo_atual + custo_cupom
+                if custo_novo < custos[v][1]: # Vejo se posso atualizar para um valor menor
+                    custos[v][1] = custo_novo
+                    heapq.heappush(heap, (custo_novo, v, 1))
+            else:  # Caso eu já tenha usado o cupom
+                custo_cupom_esgotado = custo_atual + custo_rota_v
+                if custo_cupom_esgotado < custos[v][1]: # Vejo se posso atualizar para um valor menor
+                    custos[v][1] = custo_novo
+                    heapq.heappush(heap, (custo_cupom_esgotado, v, 1))
+    
+    # Retorno o menor entre a rota sem cupons e a rota com cupons
+    return  min(custos[n-1][0], custos[n-1][1])
 
 
 # ==============================================================================
