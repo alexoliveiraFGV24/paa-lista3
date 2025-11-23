@@ -267,7 +267,7 @@ def problema_4(n: int) -> List[List[int]]:
     inicio = (0,0)
     queue = deque([inicio]) # fila para BFS
 
-    # Realiza o BFS (O(n))
+    # Realiza o BFS (O(n+m) => O(n²))
     while queue:
         i, j = queue.popleft() # nó atual (popletft é O(1), enquanto pop(0) é O(n))
         movimentos_possiveis = [
@@ -531,7 +531,7 @@ def problema_8(n: int, m: int, transicoes: List[Tuple[int, int]]) -> int:
     quantidade_caminhos = [-1] * n
 
     # Função auxiliar para saber a quantidade de caminhos até o 
-    # último estado partindo do nó u em O(m) )(fazendo um bottom-up)
+    # último estado partindo do nó u em O(m+n)) (fazendo um bottom-up)
     def dfs(u):
         if u == n - 1:  # Se chegamos no último estado (caso base)
             return 1
