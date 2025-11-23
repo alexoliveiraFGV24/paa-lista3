@@ -82,18 +82,13 @@ def problema_1(n: int, A: List[int]) -> int:
     if n < 0 or A == []:
         return None
 
-    # Função auxiliar para calcular o mínimo entre dois números
-    def min(a, b):
-        if a > b:
-            return b
-        else:
-            return a
-
+    # O(n)
     n = len(A)
     quantidades = [0] * n  # Array de 0 para as quantidades de cada sorvete
     anterior = 1e9  # Definindo um comparador com limite da questão
 
     # Percorrendo a lista ao contrário
+    # O(n)
     for i in range(n-1, -1, -1):
         valor_comparacao = min(A[i], anterior - 1)  # Comparando o estoque do sabor atual com a quantidade escolhida anteriormente
         if valor_comparacao > 0:  # Sigo o comando da questão
@@ -219,10 +214,12 @@ def problema_3(n: int, A: List[int]) -> int:
         return divs_high + divs_low
     
     # Definindo o array para guardar quantas subsequências de tamanho i eu tenho
+    # O(n)
     tamanho_subseqs = [0] * (n + 1)
     tamanho_subseqs[0] = 1 # tamanho_subseqs[0] = 1, representando a subsequência vazia (o ponto de partida)
 
     # Itera sobre cada elemento A[j] da sequência de entrada
+    # O(n*sqrt(n))
     for a in A:
         # Pego os divisores do número a
         divisores = divisores_ordenados(a)
@@ -263,13 +260,14 @@ def problema_4(n: int) -> List[List[int]]:
     até o "primeiro nó" ((0,0))
     """
 
-    # Inicializa a matriz com -1 (não visitado) (O(n²)) e inicializa a fila para o BFS
+    # Inicializa a matriz com -1 (não visitado) 
+    # (O(n²)) e inicializa a fila para o BFS
     matriz = [[-1 for _ in range(n)] for _ in range(n)]
     matriz[0][0] = 0
     inicio = (0,0)
     queue = deque([inicio]) # fila para BFS
 
-    # Realiza o BFS
+    # Realiza o BFS (O(n))
     while queue:
         i, j = queue.popleft() # nó atual (popletft é O(1), enquanto pop(0) é O(n))
         movimentos_possiveis = [
@@ -301,7 +299,7 @@ def problema_5(n: int, m: int, grid: List[List[str]]) -> int:
     Saída:
     - Retorne o menor tempo para escapar. Se não for possível, retorne -1.
 
-    IDEIA: Fazer dois BFS. O primeiro seria para saber o tempo mínimo que água
+    IDEIA: Fazer dois BFS. O primeiro seria para saber o tempo mínimo que a água
     estaria numa célula (sem ser parede) do grid. O outro seria para saber o tempo
     mínimo em que eu estaria numa célula (sem ser parede ou água) do grid. 
     Faria a execução do segundo BFS até eu estar em uma das bordas da caverna.
@@ -313,6 +311,7 @@ def problema_5(n: int, m: int, grid: List[List[str]]) -> int:
 
     # Inicializa a matriz com as posições das águas no tempo inicial
     # e coloca as posições das águas na fila
+    # O(n²) por conta da restrição de m e n
     matriz_tempo_agua = [[INF] * m for _ in range(n)]
     fila_agua = deque()    
     for r in range(n):
@@ -323,6 +322,7 @@ def problema_5(n: int, m: int, grid: List[List[str]]) -> int:
 
     # Inicializa a matriz com a minha posição inicial e coloca a minha
     # posição inicial na fila
+    # O(n²) por conta da restrição de m e n
     matriz_tempo_escape = [[INF] * m for _ in range(n)]
     fila_escape = deque()    
     for r in range(n):
@@ -333,6 +333,7 @@ def problema_5(n: int, m: int, grid: List[List[str]]) -> int:
 
     # Realizando o BFS na matriz de tempo das águas para saber o tempo mínimo
     # em que cada célula (diferente da parede) estará com água
+    # O(n²) por conta da restrição de m e n
     while fila_agua:
         i, j = fila_agua.popleft()
         tempo_agua_atual = matriz_tempo_agua[i][j]
@@ -345,6 +346,7 @@ def problema_5(n: int, m: int, grid: List[List[str]]) -> int:
 
     # Realizando  BFS na matriz de tempo de escape para saber o tempo mínimo
     # em que eu passo em cada célula (sem ser parede ou água)
+    # O(n²) por conta da restrição de m e n
     while fila_escape:
         i, j = fila_escape.popleft()
         tempo_escape_atual = matriz_tempo_escape[i][j]
@@ -398,19 +400,21 @@ def problema_6(n: int, m: int, rotas: List[Tuple[int, int, int]]) -> int:
     # Iniciando o grafo com as rotas do índice 0
     # (apenas tiro 1 dos índices reais dos vértices)
     # (fiz isso para evitar dict.get() que é O(1) apenas
-    # no caso médio)
+    # no caso médio) (O(n+m))
     grafo = [[] for _ in range(n)]
     for origem, destino, custo in rotas:
         grafo[origem-1].append((destino-1, custo))
 
-    # Iniciando a matriz de cache para usar programação
-    # dinâmica (coluna 0 diz que o cupom não foi usado na rota
+    # Iniciando a matriz de cache dos custos de chegada
+    # ao planeta i para usar programação dinâmica
+    # (coluna 0 diz que o cupom não foi usado na rota
     # e coluna 1 diz que já foi usado na rota, além disso,
     # custos[i][j] = menor custo para chegar ao planeta i)
+    # O(n)
     custos = [[INF] * 2 for _ in range(n)]    
     custos[0][0] = 0
 
-    # Execução do algoritmo de Dijskstra
+    # Execução do algoritmo de Dijskstra otimizado com heap (O(mlogn) para grafos conexos, que é o caso)
     heap = [(0, 0, 0)] 
     while heap:
         custo_atual, u, uso_cupom = heapq.heappop(heap) # Informações do planeta u 
@@ -454,9 +458,43 @@ def problema_7(n: int, m: int, estradas: List[Tuple[int, int, int]]) -> int:
 
     Saída:
     - Retorne o custo mínimo total para conectar todas as $n$ cidades.
-    """
-    pass
 
+    IDEIA: Vamos utilizar o algoritmo de Prim para encontrar a árvore
+    geradora mínima do grafo das estradas
+    """
+
+    # Iniciando o grafo não direcionado com as estradas do índice 0
+    # (apenas tiro 1 dos índices reais dos vértices)
+    # (fiz isso para evitar dict.get() que é O(1) apenas
+    # no caso médio) (O(n+m))
+    grafo = [[] for _ in range(n)]
+    for origem, destino, custo in estradas:
+        grafo[origem - 1].append((destino - 1, custo))
+        grafo[destino - 1].append((origem - 1, custo))
+
+    # Declarando o vetor de adicionado na árvore e o custo total
+    # da árvore (O(n))
+    adicionado = [False] * n 
+    custo_total = 0
+    arestas_na_mst = 0
+
+    # Inicializando o heap mínimo com o primeiro nó do grafo (O(m))
+    heap = [] 
+    for vizinho, custo in grafo[0]:
+        heapq.heappush(heap, (custo, vizinho))
+        adicionado[0] = True
+
+    # Realizando a versão otimizada do algoritmo de Prim (O(mlogn) para grafos conexos, que é o caso)
+    while heap and arestas_na_mst < n - 1:
+        custo_aresta, proximo_no = heapq.heappop(heap) # Pegando as informações do próximo nó a ser adicionado na árvore
+        adicionado[proximo_no] = True
+        custo_total += custo_aresta
+        arestas_na_mst += 1
+        for vizinho, custo_nova_aresta in grafo[proximo_no]:  # Adicionado os vizinhos no heap
+            if not adicionado[vizinho]:
+                heapq.heappush(heap, (custo_nova_aresta, vizinho))
+    
+    return custo_total
 
 # ==============================================================================
 # Problema 8 - Video Game
@@ -476,5 +514,34 @@ def problema_8(n: int, m: int, transicoes: List[Tuple[int, int]]) -> int:
     Saída:
     - Retorne um único inteiro: o número de formas distintas de ir do
       estado 1 ao estado $n$.
+
+    IDEIA: Usar DFS para percorrer os caminhos e programação dinâmica
+    para armazenar a quantidade de caminhos partindo de cada nó até o
+    último estado do jogo
     """
-    pass
+
+    # Iniciando o grafo com as transições do índice 0
+    # (apenas tiro 1 dos índices reais dos vértices)
+    # (fiz isso para evitar dict.get() que é O(1) apenas
+    # no caso médio) (O(n+m))
+    graph = [[] for _ in range(n)]
+    for u, v in transicoes:
+        graph[u-1].append(v-1)
+
+    quantidade_caminhos = [-1] * n
+
+    # Função auxiliar para saber a quantidade de caminhos até o 
+    # último estado partindo do nó u em O(m) )(fazendo um bottom-up)
+    def dfs(u):
+        if u == n - 1:  # Se chegamos no último estado (caso base)
+            return 1
+        if quantidade_caminhos[u] != -1:  # Se já calculamos
+            return quantidade_caminhos[u]
+        total_caminhos_u = 0  # Realizando o DFS recursivo para saber o número mínimo de caminhos
+        for v in graph[u]:
+            total_caminhos_u += dfs(v)
+        quantidade_caminhos[u] = total_caminhos_u
+        return total_caminhos_u
+    
+    # Aplicando a função para o nó inicial
+    return dfs(0)
